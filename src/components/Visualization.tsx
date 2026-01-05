@@ -74,35 +74,6 @@ export default function Visualization() {
         </div>
       </div>
 
-      {/* Stats Display */}
-      {focusedNode && (
-        <div className="absolute top-24 right-6 z-10">
-          <div className="bg-black/60 backdrop-blur-md border border-white/20 rounded-lg p-6 shadow-2xl min-w-[250px]">
-            <h3 className="text-xl font-bold text-white mb-3" style={{ color: focusedNode.color }}>
-              {focusedNode.id}
-            </h3>
-            <div className="space-y-2 text-gray-300">
-              <div className="flex justify-between">
-                <span>Value:</span>
-                <span className="font-bold text-white">{focusedNode.value}M</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Position:</span>
-                <span className="font-mono text-xs text-gray-400">
-                  [{focusedNode.position.join(', ')}]
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={() => setFocusedNode(null)}
-              className="mt-4 w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded transition-colors"
-            >
-              Clear Focus
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* 3D Canvas */}
       <Canvas
         camera={{ position: [0, 0, 15], fov: 60 }}
