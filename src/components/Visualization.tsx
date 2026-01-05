@@ -35,40 +35,6 @@ export default function Visualization() {
 
   return (
     <div className="w-full h-screen bg-black relative overflow-hidden">
-      {/* UI Overlay */}
-      <div className="absolute top-0 left-0 right-0 z-10 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-2xl">
-            <h1 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              3D Network Visualization
-            </h1>
-            <p className="text-gray-300 text-sm">
-              Interactive graph with enhanced WebGL effects • Hover over nodes for details
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Instructions */}
-      <div className="absolute bottom-6 left-6 z-10">
-        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-lg p-4 shadow-2xl">
-          <div className="text-white text-sm space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
-              <span>Drag to rotate</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></div>
-              <span>Scroll to zoom</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-pink-400 animate-pulse"></div>
-              <span>Right-click to pan</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* 3D Canvas */}
       <Canvas
         camera={{ position: [0, 0, 15], fov: 60 }}
