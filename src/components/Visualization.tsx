@@ -1,8 +1,14 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { PostProcessing } from './PostProcessing';
+
+// Detect if device is mobile/touch
+const isTouchDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+};
 
 // =============================================================================
 // CONFIGURATION CONSTANTS
@@ -19,17 +25,17 @@ const COLORS = {
   stars: '#556688',
 } as const;
 
-// Neural cloud generation parameters - open web structure, not dense balls
+// Neural cloud generation parameters - dense open web structure
 const CLOUD_CONFIG = {
-  clusterCount: 100,
+  clusterCount: 150,
   clusterSpread: { x: 160, y: 120, z: 100 },
-  pointsPerCluster: { min: 3, max: 8 },      // Very few points per cluster - just anchor nodes
-  clusterPointSpread: { min: 8, max: 15 },   // Spread them far apart
-  scatteredPoints: 200,
+  pointsPerCluster: { min: 10, max: 18 },      // More points per cluster
+  clusterPointSpread: { min: 5, max: 10 },     // Tighter spread
+  scatteredPoints: 600,                         // Many scattered points
   scatteredSpread: { x: 180, y: 130, z: 110 },
-  filamentCount: 150,                         // Many more filaments for web structure
-  filamentPoints: { min: 8, max: 15 },        // Fewer points per filament, more spread
-  filamentNoise: 0.8,                         // Less noise for cleaner lines
+  filamentCount: 300,                           // Many filaments
+  filamentPoints: { min: 15, max: 25 },         // Dense filaments
+  filamentNoise: 1.2,                           // Organic feel
 } as const;
 
 // Node size parameters - delicate points for elegant web
@@ -39,13 +45,13 @@ const NODE_SIZE = {
   filament: { min: 0.005, max: 0.012 },       // Small filament nodes
 } as const;
 
-// Connection parameters - favor long elegant strands over dense local connections
+// Connection parameters - dense web with long elegant strands
 const CONNECTION_CONFIG = {
-  maxPerNode: 2,                              // Fewer connections per node
-  proximityThreshold: 12,                     // Slightly larger threshold
-  proximityProbability: 0.3,                  // Lower probability for sparse look
-  longRangeCount: 1200,                       // More long-range connections for web effect
-  longRangeDistance: { min: 15, max: 60 },    // Longer strands
+  maxPerNode: 4,                              // More connections per node
+  proximityThreshold: 12,                     // Connect nearby nodes
+  proximityProbability: 0.5,                  // Higher probability
+  longRangeCount: 2000,                       // Many long-range connections
+  longRangeDistance: { min: 10, max: 50 },    // Long elegant strands
 } as const;
 
 // Animation & rendering parameters
@@ -376,6 +382,12 @@ function NeuralNetworkScene() {
 
 export default function Visualization() {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isTouch, setIsTouch] = useState(false);
+
+  // Detect touch device on mount
+  useEffect(() => {
+    setIsTouch(isTouchDevice());
+  }, []);
 
   // Use Canvas onCreated callback instead of arbitrary setTimeout
   const handleCanvasCreated = useCallback(() => {
@@ -383,7 +395,12 @@ export default function Visualization() {
   }, []);
 
   return (
-    <div className="w-full h-screen bg-black relative overflow-hidden">
+    <div
+      className="w-full bg-black relative overflow-hidden"
+      style={{
+        height: '100dvh',  // Dynamic viewport height (fallback handled by CSS)
+      }}
+    >
       <Canvas
         camera={{
           position: CAMERA_CONFIG.initialPosition,
@@ -393,9 +410,11 @@ export default function Visualization() {
           antialias: true,
           alpha: true,
           powerPreference: 'high-performance',
+          preserveDrawingBuffer: true,
         }}
         dpr={[1, 2]}
         onCreated={handleCanvasCreated}
+        style={{ touchAction: 'none' }}
         className={`transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
       >
         <PostProcessing />
@@ -409,8 +428,8 @@ export default function Visualization() {
           enableZoom
           enablePan={false}
           enableRotate
-          zoomSpeed={1}
-          rotateSpeed={CAMERA_CONFIG.rotateSpeed}
+          zoomSpeed={isTouch ? 0.5 : 1}
+          rotateSpeed={isTouch ? 0.4 : CAMERA_CONFIG.rotateSpeed}
           minDistance={CAMERA_CONFIG.minDistance}
           maxDistance={CAMERA_CONFIG.maxDistance}
           enableDamping
@@ -419,6 +438,10 @@ export default function Visualization() {
           autoRotateSpeed={CAMERA_CONFIG.autoRotateSpeed}
           minPolarAngle={0}
           maxPolarAngle={Math.PI}
+          touches={{
+            ONE: THREE.TOUCH.ROTATE,
+            TWO: THREE.TOUCH.DOLLY_ROTATE,
+          }}
         />
       </Canvas>
     </div>
