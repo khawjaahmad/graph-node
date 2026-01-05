@@ -19,50 +19,50 @@ const COLORS = {
   stars: '#556688',
 } as const;
 
-// Neural cloud generation parameters
+// Neural cloud generation parameters - open web structure, not dense balls
 const CLOUD_CONFIG = {
-  clusterCount: 50,
-  clusterSpread: { x: 80, y: 55, z: 45 },
-  pointsPerCluster: { min: 30, max: 55 },
-  clusterPointSpread: { min: 2, max: 6 },
-  scatteredPoints: 300,
-  scatteredSpread: { x: 90, y: 60, z: 50 },
-  filamentCount: 40,
-  filamentPoints: { min: 20, max: 45 },
-  filamentNoise: 1.5,
+  clusterCount: 100,
+  clusterSpread: { x: 160, y: 120, z: 100 },
+  pointsPerCluster: { min: 3, max: 8 },      // Very few points per cluster - just anchor nodes
+  clusterPointSpread: { min: 8, max: 15 },   // Spread them far apart
+  scatteredPoints: 200,
+  scatteredSpread: { x: 180, y: 130, z: 110 },
+  filamentCount: 150,                         // Many more filaments for web structure
+  filamentPoints: { min: 8, max: 15 },        // Fewer points per filament, more spread
+  filamentNoise: 0.8,                         // Less noise for cleaner lines
 } as const;
 
-// Node size parameters
+// Node size parameters - delicate points for elegant web
 const NODE_SIZE = {
-  cluster: { min: 0.008, max: 0.02 },
-  scattered: { min: 0.005, max: 0.015 },
-  filament: { min: 0.006, max: 0.014 },
+  cluster: { min: 0.01, max: 0.025 },         // Slightly larger anchor nodes
+  scattered: { min: 0.004, max: 0.01 },       // Tiny scattered dust
+  filament: { min: 0.005, max: 0.012 },       // Small filament nodes
 } as const;
 
-// Connection parameters
+// Connection parameters - favor long elegant strands over dense local connections
 const CONNECTION_CONFIG = {
-  maxPerNode: 5,
-  proximityThreshold: 8,
-  proximityProbability: 0.6,
-  longRangeCount: 800,
-  longRangeDistance: { min: 5, max: 35 },
+  maxPerNode: 2,                              // Fewer connections per node
+  proximityThreshold: 12,                     // Slightly larger threshold
+  proximityProbability: 0.3,                  // Lower probability for sparse look
+  longRangeCount: 1200,                       // More long-range connections for web effect
+  longRangeDistance: { min: 15, max: 60 },    // Longer strands
 } as const;
 
 // Animation & rendering parameters
 const RENDER_CONFIG = {
-  particleCount: 2000,
-  starCount: 4000,
-  starDistance: { min: 120, max: 320 },
+  starCount: 5000,
+  starDistance: { min: 180, max: 400 },
   pointSizeMultiplier: 300,
-  particleSpeed: { min: 0.3, max: 0.7 },
+  fogNear: 80,
+  fogFar: 220,
 } as const;
 
-// Camera configuration
+// Camera configuration - adjusted for larger graph
 const CAMERA_CONFIG = {
-  initialPosition: [0, 0, 60] as [number, number, number],
+  initialPosition: [0, 0, 90] as [number, number, number],
   fov: 85,
   minDistance: 0.5,
-  maxDistance: 80,
+  maxDistance: 150,
   autoRotateSpeed: 0.08,
   rotateSpeed: 0.6,
   dampingFactor: 0.05,
@@ -328,98 +328,6 @@ function NeuralConnections({ nodes, connections }: { nodes: NeuralNode[], connec
   }} />;
 }
 
-// Curve endpoint data stored as plain arrays to avoid object allocation
-interface CurveData {
-  startX: Float32Array;
-  startY: Float32Array;
-  startZ: Float32Array;
-  endX: Float32Array;
-  endY: Float32Array;
-  endZ: Float32Array;
-}
-
-// Flowing energy particles along connections
-function EnergyParticles({ nodes, connections }: { nodes: NeuralNode[], connections: [number, number][] }) {
-  const particlesRef = useRef<THREE.Points>(null);
-  const particleCount = Math.min(connections.length * 2, RENDER_CONFIG.particleCount);
-
-  const { geometry, curveData, speeds } = useMemo(() => {
-    const positions = new Float32Array(particleCount * 3);
-    const speedsArray = new Float32Array(particleCount);
-
-    // Store curve endpoints as typed arrays instead of THREE.LineCurve3 objects
-    const curveData: CurveData = {
-      startX: new Float32Array(particleCount),
-      startY: new Float32Array(particleCount),
-      startZ: new Float32Array(particleCount),
-      endX: new Float32Array(particleCount),
-      endY: new Float32Array(particleCount),
-      endZ: new Float32Array(particleCount),
-    };
-
-    const { particleSpeed } = RENDER_CONFIG;
-
-    for (let i = 0; i < particleCount; i++) {
-      const connIdx = i % connections.length;
-      const [a, b] = connections[connIdx];
-      const nodeA = nodes[a];
-      const nodeB = nodes[b];
-
-      // Store endpoints
-      curveData.startX[i] = nodeA.position.x;
-      curveData.startY[i] = nodeA.position.y;
-      curveData.startZ[i] = nodeA.position.z;
-      curveData.endX[i] = nodeB.position.x;
-      curveData.endY[i] = nodeB.position.y;
-      curveData.endZ[i] = nodeB.position.z;
-
-      speedsArray[i] = particleSpeed.min + Math.random() * (particleSpeed.max - particleSpeed.min);
-
-      // Initial position via lerp
-      const t = Math.random();
-      positions[i * 3] = nodeA.position.x + (nodeB.position.x - nodeA.position.x) * t;
-      positions[i * 3 + 1] = nodeA.position.y + (nodeB.position.y - nodeA.position.y) * t;
-      positions[i * 3 + 2] = nodeA.position.z + (nodeB.position.z - nodeA.position.z) * t;
-    }
-
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-    return { geometry: geo, curveData, speeds: speedsArray };
-  }, [nodes, connections, particleCount]);
-
-  useFrame((state) => {
-    if (!particlesRef.current) return;
-    const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
-    const time = state.clock.elapsedTime;
-
-    // Manual lerp without allocating Vector3 objects
-    for (let i = 0; i < particleCount; i++) {
-      const t = (time * speeds[i] + i * 0.1) % 1;
-
-      // Lerp: start + (end - start) * t
-      positions[i * 3] = curveData.startX[i] + (curveData.endX[i] - curveData.startX[i]) * t;
-      positions[i * 3 + 1] = curveData.startY[i] + (curveData.endY[i] - curveData.startY[i]) * t;
-      positions[i * 3 + 2] = curveData.startZ[i] + (curveData.endZ[i] - curveData.startZ[i]) * t;
-    }
-    particlesRef.current.geometry.attributes.position.needsUpdate = true;
-  });
-
-  return (
-    <points ref={particlesRef} geometry={geometry}>
-      <pointsMaterial
-        size={0.03}
-        color={COLORS.accent}
-        transparent
-        opacity={0.8}
-        blending={THREE.AdditiveBlending}
-        sizeAttenuation
-        depthWrite={false}
-      />
-    </points>
-  );
-}
-
 // Distant star field - surrounds everything
 function DeepStarfield() {
   const geometry = useMemo(() => {
@@ -462,7 +370,6 @@ function NeuralNetworkScene() {
     <group>
       <NeuralConnections nodes={nodes} connections={connections} />
       <NeuralPoints nodes={nodes} />
-      <EnergyParticles nodes={nodes} connections={connections} />
     </group>
   );
 }
@@ -493,7 +400,7 @@ export default function Visualization() {
       >
         <PostProcessing />
         <color attach="background" args={[COLORS.background]} />
-        <fog attach="fog" args={[COLORS.fog, 50, 150]} />
+        <fog attach="fog" args={[COLORS.fog, RENDER_CONFIG.fogNear, RENDER_CONFIG.fogFar]} />
 
         <DeepStarfield />
         <NeuralNetworkScene />
