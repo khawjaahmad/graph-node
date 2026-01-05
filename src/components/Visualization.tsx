@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { DataNode, Edge } from '../types';
-import { EnhancedNode } from './EnhancedNode';
+import { Node } from './Node';
 import { FlowingEdge } from './FlowingEdge';
-import { EnhancedStarfield } from './EnhancedStarfield';
+import { Starfield } from './Starfield';
 import { NebulaBackground } from './NebulaBackground';
 import { DynamicLighting } from './DynamicLighting';
-import { EnhancedPostProcessing } from './EnhancedPostProcessing';
+import { PostProcessing } from './PostProcessing';
 
 const nodes: DataNode[] = [
   { id: 'Total', value: 92.7, position: [0, 0, 0], color: '#FFE70D' },
@@ -25,7 +25,7 @@ const edges: Edge[] = nodes.slice(1).map(node => ({
   target: 'Total',
 }));
 
-export default function EnhancedDataVisualization() {
+export default function Visualization() {
   const [focusedNode, setFocusedNode] = useState<DataNode | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -115,7 +115,7 @@ export default function EnhancedDataVisualization() {
         className={`transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
       >
         {/* Post-processing effects */}
-        <EnhancedPostProcessing />
+        <PostProcessing />
         
         {/* Lighting */}
         <DynamicLighting />
@@ -125,7 +125,7 @@ export default function EnhancedDataVisualization() {
         
         {/* Background */}
         <NebulaBackground />
-        <EnhancedStarfield />
+        <Starfield />
         
         {/* Graph elements */}
         {edges.map((edge, i) => (
@@ -133,7 +133,7 @@ export default function EnhancedDataVisualization() {
         ))}
         
         {nodes.map((node) => (
-          <EnhancedNode key={node.id} node={node} onNodeClick={handleNodeClick} />
+          <Node key={node.id} node={node} onNodeClick={handleNodeClick} />
         ))}
         
         {/* Controls */}

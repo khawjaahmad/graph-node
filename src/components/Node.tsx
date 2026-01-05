@@ -1,17 +1,17 @@
 import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+
 import * as THREE from 'three';
 import { DataNode } from '../types';
 import { ParticleHalo } from './ParticleHalo';
 import { EnergyRing } from './EnergyRing';
 
-interface EnhancedNodeProps {
+interface NodeProps {
   node: DataNode;
   onNodeClick?: (node: DataNode) => void;
 }
 
-export function EnhancedNode({ node, onNodeClick }: EnhancedNodeProps) {
+export function Node({ node, onNodeClick }: NodeProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
   const outerGlowRef = useRef<THREE.Mesh>(null);
@@ -72,7 +72,7 @@ export function EnhancedNode({ node, onNodeClick }: EnhancedNodeProps) {
     <group position={new THREE.Vector3(...node.position)}>
       {/* Outer glow sphere */}
       <mesh ref={outerGlowRef}>
-        <sphereGeometry args={[1, 32, 32]} />
+        <sphereGeometry args={[1, 64, 64]} />
         <meshBasicMaterial 
           color={node.color} 
           transparent 
@@ -84,7 +84,7 @@ export function EnhancedNode({ node, onNodeClick }: EnhancedNodeProps) {
       
       {/* Inner glow sphere */}
       <mesh ref={glowRef}>
-        <sphereGeometry args={[1, 64, 64]} />
+        <sphereGeometry args={[1, 128, 128]} />
         <meshBasicMaterial 
           color={node.color} 
           transparent 
@@ -101,7 +101,7 @@ export function EnhancedNode({ node, onNodeClick }: EnhancedNodeProps) {
         onPointerOut={() => setHovered(false)}
         onClick={handleClick}
       >
-        <sphereGeometry args={[1, 128, 128]} />
+        <sphereGeometry args={[1, 256, 256]} />
         <meshPhysicalMaterial
           color={node.color}
           emissive={node.color}
@@ -126,23 +126,7 @@ export function EnhancedNode({ node, onNodeClick }: EnhancedNodeProps) {
       <EnergyRing color={node.color} radius={scale * 1.5} speed={1} />
       <EnergyRing color={node.color} radius={scale * 1.7} speed={-0.8} delay={0.5} />
       
-      {/* HTML Label */}
-      {hovered && (
-        <Html
-          position={[0, 1.5, 0]}
-          center
-          distanceFactor={8}
-          style={{
-            pointerEvents: 'none',
-            userSelect: 'none',
-          }}
-        >
-          <div className="bg-black/80 backdrop-blur-md text-white px-4 py-2 rounded-lg border border-white/20 shadow-2xl">
-            <div className="font-bold text-lg" style={{ color: node.color }}>{node.id}</div>
-            <div className="text-sm text-gray-300">Value: {node.value}M</div>
-          </div>
-        </Html>
-      )}
+
     </group>
   );
 }

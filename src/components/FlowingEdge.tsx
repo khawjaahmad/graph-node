@@ -2,6 +2,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { DataNode, Edge } from '../types';
+import { NerveConnection } from './NerveConnection';
 
 interface FlowingEdgeProps {
   edge: Edge;
@@ -118,6 +119,9 @@ export function FlowingEdge({ edge, nodes }: FlowingEdgeProps) {
           depthWrite={false}
         />
       </points>
+      
+      {/* Nerve-like connections */}
+      <NerveConnection start={new THREE.Vector3(...source.position)} end={new THREE.Vector3(...target.position)} color={source.color} />
     </group>
   );
 }

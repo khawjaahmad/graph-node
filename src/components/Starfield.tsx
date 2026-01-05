@@ -2,7 +2,7 @@ import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export function EnhancedStarfield() {
+export function Starfield() {
   const starLayers = [
     { count: 1500, radius: 40, speed: 0.01, size: 0.02, color: '#ffffff' },
     { count: 1000, radius: 50, speed: 0.005, size: 0.015, color: '#aaccff' },

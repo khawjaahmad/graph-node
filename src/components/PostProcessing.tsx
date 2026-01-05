@@ -2,7 +2,7 @@ import { EffectComposer, Bloom, ChromaticAberration, Vignette, DepthOfField } fr
 import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
 
-export function EnhancedPostProcessing() {
+export function PostProcessing() {
   return (
     <EffectComposer>
       {/* Bloom effect for glowing elements */}

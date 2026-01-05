@@ -1,9 +1,9 @@
-import EnhancedDataVisualization from './components/EnhancedDataVisualization';
+import Visualization from './components/Visualization';
 
 function App() {
   return (
     <div className="w-full h-screen">
-      <EnhancedDataVisualization />
+      <Visualization />
     </div>
   );
 }
