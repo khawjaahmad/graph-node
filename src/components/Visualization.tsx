@@ -26,17 +26,12 @@ const edges: Edge[] = nodes.slice(1).map(node => ({
 }));
 
 export default function Visualization() {
-  const [focusedNode, setFocusedNode] = useState<DataNode | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     // Intro animation trigger
     setTimeout(() => setIsLoaded(true), 100);
   }, []);
-
-  const handleNodeClick = (node: DataNode) => {
-    setFocusedNode(focusedNode?.id === node.id ? null : node);
-  };
 
   return (
     <div className="w-full h-screen bg-black relative overflow-hidden">
@@ -48,7 +43,7 @@ export default function Visualization() {
               3D Network Visualization
             </h1>
             <p className="text-gray-300 text-sm">
-              Interactive graph with enhanced WebGL effects • Hover over nodes for details • Click to focus
+              Interactive graph with enhanced WebGL effects • Hover over nodes for details
             </p>
           </div>
         </div>
@@ -104,7 +99,7 @@ export default function Visualization() {
         ))}
         
         {nodes.map((node) => (
-          <Node key={node.id} node={node} onNodeClick={handleNodeClick} />
+          <Node key={node.id} node={node} />
         ))}
         
         {/* Controls */}
