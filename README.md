@@ -1,104 +1,145 @@
-# 3D Network Visualization
+# Neural Cloud
 
-An interactive 3D network visualization built with React Three Fiber featuring stunning WebGL effects, dynamic animations, and professional UI design.
+An interactive 3D neural-network visualization built with React Three Fiber. A procedurally
+generated web of nodes and filaments drifts in deep space while activation cascades propagate
+through its topology and signals travel along its connections.
 
-![3D Network Visualization](https://img.shields.io/badge/React-18.3.1-blue) ![Three.js](https://img.shields.io/badge/Three.js-0.161.0-green) ![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-blue)
+![React](https://img.shields.io/badge/React-19.2-blue) ![Three.js](https://img.shields.io/badge/Three.js-0.185-green) ![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue) ![Vite](https://img.shields.io/badge/Vite-8.2-purple)
 
-## Features
-
-This visualization transforms network data into an immersive 3D experience with advanced visual effects including multi-layer holographic nodes with particle halos and energy rings, animated particle flow along edges showing data movement, multi-layer starfield with thousands of twinkling stars, custom GLSL shader nebula background, dynamic colored lighting system, and cinematic post-processing effects like bloom, chromatic aberration, vignette, and depth of field.
-
-The interface provides professional glass-morphism UI overlays, interactive tooltips on hover, node focus system with detailed statistics, and smooth animations throughout. Users can rotate the view by dragging, zoom with scroll wheel, and pan with right-click drag.
-
-## Quick Start
-
-Install dependencies and run the development server:
+## Quick start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser.
+Open `http://localhost:5173`. Drag to rotate, scroll to zoom, move the cursor to disturb the
+cloud. The camera also orbits on its own.
 
-## Build for Production
+## What it renders
 
-```bash
-npm run build
-npm run preview
+There is no input data. The entire structure is generated at load from a single seed:
+
+- **150 cluster centres** scattered through a 160×120×100 volume, each seeded with 10–18 nodes
+- **600 scattered nodes** filling the gaps
+- **300 filaments** of 15–25 nodes each, interpolated between pairs of cluster centres
+
+That comes to roughly 8,700 nodes. Edges are drawn twice: a proximity pass connecting nearby
+nodes through a spatial hash, and 2,000 long-range attempts that produce the long strands
+crossing the frame.
+
+Everything renders in **two draw calls** — one `THREE.Points` for every node, one `LineSegments`
+for every edge — both driven by custom GLSL with additive blending.
+
+## What moves
+
+**Drift.** The whole structure flows organically. Node positions are never recomputed on the
+CPU; both shaders displace vertices by an identical noise function of the original position, so
+edges stay welded to their endpoints while everything moves.
+
+**Signals.** Pulses travel along a fraction of the edges, source to target, rendered as a moving
+gaussian head with an exponential comet tail so direction of travel is readable.
+
+**Cascades.** Every few seconds the piece picks new origin nodes and runs a breadth-first search
+across the adjacency list. Each node's hop distance goes into a vertex attribute, and the shader
+renders the wavefront from a single time uniform. Because the wave follows the graph rather than
+space, it reads as inference propagating rather than as a ripple.
+
+**Cursor.** Nodes near the pointer brighten and lean toward it, measured in aspect-corrected
+screen space — no raycasting.
+
+## Tuning
+
+Everything lives in `src/lib/config.ts`.
+
+Structural constants (cluster counts, spreads, connection rules) sit at the top. Expressive
+constants live in `MOODS`, and the piece ships with two:
+
+| Mood | Character |
+| --- | --- |
+| `evolve` | Restrained and cold. Motion is felt more than seen. **Active by default.** |
+| `showpiece` | The same piece at demo-reel loudness — heavier bloom, dense signal traffic, shallow depth of field. |
+
+Switch with the single line at the bottom of the file:
+
+```ts
+export const MOOD: Mood = MOODS.showpiece;
 ```
 
-The production build will be in the `dist/` folder, ready for deployment to any static hosting service.
+Change `CLOUD_SEED` for a different cloud. Generation is deterministic, so a given seed always
+produces the same art.
 
-## Technical Stack
-
-**Frontend Framework**: React 18.3.1 with TypeScript  
-**3D Rendering**: Three.js with React Three Fiber  
-**Styling**: Tailwind CSS  
-**Build Tool**: Vite  
-**Additional Libraries**: @react-three/drei, @react-three/postprocessing, @react-spring/three
-
-## Project Structure
+## Project structure
 
 ```
 src/
 ├── components/
-│   ├── EnhancedDataVisualization.tsx  # Main scene composition
-│   ├── EnhancedNode.tsx               # Multi-layer node rendering
-│   ├── ParticleHalo.tsx               # Particle system around nodes
-│   ├── EnergyRing.tsx                 # Rotating energy rings
-│   ├── FlowingEdge.tsx                # Animated edge connections
-│   ├── EnhancedStarfield.tsx          # Multi-layer star system
-│   ├── NebulaBackground.tsx           # GLSL shader background
-│   ├── DynamicLighting.tsx            # Animated lighting system
-│   ├── EnhancedPostProcessing.tsx     # Post-processing effects
-│   ├── CameraController.tsx           # Camera animation controller
-│   └── DataVisualization.tsx          # Original component (preserved)
-├── App.tsx
-├── main.tsx
-└── types.ts
+│   ├── Visualization.tsx       # Canvas, controls, render-loop gating
+│   ├── NeuralScene.tsx         # Composes the structure and its clock
+│   ├── NeuralPoints.tsx        # All nodes, one draw call
+│   ├── NeuralConnections.tsx   # All edges, one draw call
+│   ├── DeepStarfield.tsx       # Distant star shell
+│   ├── NebulaBackdrop.tsx      # Procedural fbm backdrop
+│   └── PostProcessing.tsx      # Bloom, grain, vignette
+├── hooks/
+│   ├── useNeuralGeometry.ts    # Builds geometry, owns cascade hop buffers
+│   ├── useNeuralAnimation.ts   # Shared uniforms and the frame loop
+│   └── useMotionPreferences.ts # Reduced motion and visibility
+└── lib/
+    ├── config.ts               # Every tunable value
+    ├── neuralCloud.ts          # Generation, spatial hash, BFS
+    ├── shaders.ts              # All GLSL
+    ├── uniforms.ts             # Shared uniform definitions
+    └── random.ts               # Seeded RNG
 ```
 
-## Component Architecture
+## Notes for editing the shaders
 
-The visualization is built with modular React components that handle specific aspects of the 3D scene. **EnhancedNode** creates multi-layer spheres with PBR materials, particle halos, and energy rings. **FlowingEdge** generates curved paths with animated particles flowing along connections. **EnhancedStarfield** renders three depth layers of stars with independent rotation speeds. **NebulaBackground** uses custom GLSL shaders for procedural nebula generation. **DynamicLighting** manages three colored point lights that orbit the scene. **EnhancedPostProcessing** applies bloom, chromatic aberration, vignette, and depth of field effects.
+**The coherence invariant.** `NeuralPoints` and `NeuralConnections` must apply the *identical*
+`neuralDrift()` displacement to the *original* vertex position. If the two shaders ever diverge,
+edges will visibly detach from their nodes. It is the single most important thing to preserve.
 
-## Visual Effects
+**Additive blending punishes brightness.** Thousands of strands overlap, so anything that
+brightens an individual element multiplies across every crossing. Colours grade *down* from each
+mesh's base tint rather than up toward a shared bright one, and the accent is a saturated cyan
+rather than a near-white — a neutral accent pumps red into dense regions until the core
+desaturates to white.
 
-Nodes feature triple-layer glow systems with outer glow, inner glow, and glass-like core using meshPhysicalMaterial with clearcoat, transmission, and IOR properties. Each node has 50 orbiting particles and two counter-rotating energy rings. Hover interactions scale nodes by 30% and intensify emissive properties, while click interactions enable focus mode with detailed statistics.
+**Some effects fight the medium.** Depth of field and chromatic aberration are set to zero in
+`evolve` deliberately, not for performance: bokeh smears a cloud of single-pixel points into
+haze, and channel-splitting points that small yields magenta and green speckle. Bloom is what
+makes activation legible at default zoom, since nodes render at roughly a pixel each.
 
-Edges use Catmull-Rom spline curves with 30 animated particles per connection flowing from source to target. Colors blend between source and target nodes with pulsing opacity and emissive intensity.
+## Accessibility and performance
 
-The background consists of 3,300 stars across three layers with different colors (white, cool blue, warm orange) and rotation speeds, plus an animated nebula created with fractal Brownian motion noise in GLSL shaders.
+The render loop stops entirely when the canvas scrolls off screen or the tab loses focus. Under
+`prefers-reduced-motion: reduce` the animation drivers are zeroed and the loop switches to
+on-demand, leaving a still image that remains fully explorable.
 
-Post-processing includes UnrealBloom with mipmapping for glowing elements, chromatic aberration for depth perception, vignette for cinematic framing, and depth of field with bokeh blur.
+Geometry and materials are disposed on unmount.
 
-## Performance
+## Scripts
 
-The visualization is optimized for smooth 60 FPS performance with high-DPI support, antialiasing enabled, GPU preference set to high-performance, efficient geometry with optimized sphere segments, additive blending for glow effects, and depth write control for transparent objects.
+```bash
+npm run dev       # development server
+npm run build     # production build to dist/
+npm run preview   # serve the production build
+npm run lint      # eslint
+```
 
-## Data Structure
+## Technical stack
 
-Nodes are defined with id, value, 3D position coordinates, and color. Edges connect source and target nodes. The current implementation visualizes business sectors with a central "Total" node connected to Aviation, B&I Aviation, Defense, Government, Healthcare, Venue & Events, and Retail nodes.
+React 19 with TypeScript, Three.js via React Three Fiber 9, `@react-three/drei`,
+`@react-three/postprocessing`, Tailwind CSS 4, and Vite 8.
 
-## Customization
+TypeScript is held at 6.0 rather than 7.0 on purpose. TypeScript 7 is the Go-native compiler
+rewrite and ships without the stable programmatic API typescript-eslint needs; its peer range is
+`>=4.8.4 <6.1.0`, so npm refuses the install outright. Revisit when 7.1 lands.
 
-To modify the graph data, edit the `nodes` and `edges` arrays in `src/components/EnhancedDataVisualization.tsx`. Adjust visual effects by modifying component parameters like particle counts, animation speeds, and material properties. Configure post-processing intensity in `EnhancedPostProcessing.tsx`. Customize colors by updating node colors, lighting colors, and UI theme colors.
+## Browser support
 
-## Browser Compatibility
-
-Requires a modern browser with WebGL 2.0 support. Tested on Chrome 90+, Firefox 88+, Safari 14+, and Edge 90+.
+Requires WebGL 2.0. Tested on current Chrome, Firefox, Safari, and Edge.
 
 ## License
 
 MIT
-
-## Development
-
-This project uses Vite for fast development with hot module replacement, TypeScript for type safety, ESLint for code quality, and Tailwind CSS for styling.
-
-Run `npm run lint` to check code quality.
-
-## Deployment
-
-The project can be deployed to Vercel, Netlify, GitHub Pages, or any static hosting service. Simply build the project and upload the `dist/` folder.
